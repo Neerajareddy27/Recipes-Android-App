@@ -1,60 +1,103 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet } from 'react-native';
+import { Text, Button, ActivityIndicator, Card, Title } from 'react-native-paper';
 import axios from 'axios';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
+import { config } from './config/config';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-type RecipeItem = {
+interface RecipeItem {
   id: number;
   name: string;
-};
+}
 
-type RecipeResponse = {
+interface RecipeResponse {
   recipes: RecipeItem[];
-};
+}
 
 export default function Home({ navigation }: Props) {
   const [data, setData] = useState<RecipeResponse | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    axios.get<RecipeResponse>('https://dummyjson.com/recipes')
+    axios.get<RecipeResponse>(config.API_URL)
       .then((response) => setData(response.data))
       .catch((err) => setError(err));
   }, []);
 
   if (error) {
-    return <Text>Error: {error.message}</Text>;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Error: {error.message}</Text>
+      </View>
+    );
   }
 
   if (!data) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Recipes</Text>
-      <FlatList
-        data={data.recipes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Recipes', { id: item.id })}
-            style={styles.item}
-          >
-            <Text style={styles.text}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-      />
-    </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.content}>
+        <Title style={styles.title}>Recipes</Title>
+        {data.recipes.map((item) => (
+          <Card key={item.id} style={styles.card}>
+            <Card.Content>
+              <Button
+                mode="outlined"
+                onPress={() => navigation.navigate('Recipes', { id: item.id })}
+                style={styles.button}
+              >
+                {item.name}
+              </Button>
+            </Card.Content>
+          </Card>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20 },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  item: { padding: 15, backgroundColor: '#f0f0f0', marginBottom: 10, borderRadius: 8 },
-  text: { fontSize: 18 },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    padding: 16,
+    maxWidth: 400,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  title: {
+    marginBottom: 24,
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  card: {
+    marginBottom: 12,
+    elevation: 2,
+  },
+  button: {
+    marginVertical: 4,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });
